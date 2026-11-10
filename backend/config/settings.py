@@ -65,12 +65,26 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+import dj_database_url
+
+database_url = os.environ.get('DATABASE_URL') or os.environ.get('POSTGRES_URL')
+if database_url:
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+else:
+    # Local SQLite fallback (uses /tmp on Vercel serverless if no Postgres attached)
+    db_path = Path('/tmp/db.sqlite3') if os.environ.get('VERCEL') else (BASE_DIR / 'db.sqlite3')
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': db_path,
+        }
+    }
 
 AUTH_USER_MODEL = 'core.User'
 
