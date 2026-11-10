@@ -238,7 +238,39 @@ export const loadDb = () => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      const initial = getInitialData();
+      let changed = false;
+
+      // Auto-heal empty or missing structures
+      if (!parsed.classes || !Array.isArray(parsed.classes) || parsed.classes.length === 0) {
+        parsed.classes = initial.classes;
+        changed = true;
+      }
+      if (!parsed.students || !Array.isArray(parsed.students) || parsed.students.length === 0) {
+        parsed.students = initial.students;
+        changed = true;
+      }
+      if (!parsed.attendanceSessions || !Array.isArray(parsed.attendanceSessions) || parsed.attendanceSessions.length === 0) {
+        parsed.attendanceSessions = initial.attendanceSessions;
+        changed = true;
+      }
+      if (!parsed.examinations || !Array.isArray(parsed.examinations) || parsed.examinations.length === 0) {
+        parsed.examinations = initial.examinations;
+        changed = true;
+      }
+      if (!parsed.marks || !Array.isArray(parsed.marks) || parsed.marks.length === 0) {
+        parsed.marks = initial.marks;
+        changed = true;
+      }
+      if (!parsed.gradingScales || !Array.isArray(parsed.gradingScales)) {
+        parsed.gradingScales = initial.gradingScales;
+        changed = true;
+      }
+      if (changed) {
+        saveDb(parsed);
+      }
+      return parsed;
     }
   } catch (e) {
     console.error('Error reading browser DB:', e);
@@ -269,7 +301,8 @@ const getGradeForScore = (pct: number | null) => {
 // Dispatcher for API endpoints
 export const handleMockRequest = async (method: string, url: string, data?: any) => {
   const db = loadDb();
-  const cleanUrl = url.split('?')[0];
+  const rawUrl = url.split('?')[0];
+  const cleanUrl = rawUrl.endsWith('/') ? rawUrl : `${rawUrl}/`;
   const queryParams = new URLSearchParams(url.includes('?') ? url.split('?')[1] : '');
 
   // 1. Auth Me

@@ -3,17 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCheck, AlertTriangle, GraduationCap, Info } from 'lucide-react';
 import { apiClient } from '../api/client';
 import { Card } from '../components/common/Card';
-import { Badge } from '../components/common/Badge';
 import { NotificationItem } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Notifications: React.FC = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const { data: notificationsData, isLoading } = useQuery<NotificationItem[]>({
     queryKey: ['notifications'],
     queryFn: async () => {
       const res = await apiClient.get('/api/notifications/');
-      return res.data?.results || res.data;
+      return res.data?.results || (Array.isArray(res.data) ? res.data : []);
     },
   });
 
@@ -50,16 +51,16 @@ export const Notifications: React.FC = () => {
     <div className="space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-navy-800 tracking-tight">Notification Center</h2>
-          <p className="text-[12px] text-slate">Attendance threshold warnings, examination publication notices, and announcements</p>
+          <h2 className="text-xl font-bold text-navy-800 tracking-tight">{t('Notification Center')}</h2>
+          <p className="text-[12px] text-slate">{t('Attendance threshold warnings, examination publication notices, and announcements', 'ಹಾಜರಾತಿ ಮಿತಿ ಎಚ್ಚರಿಕೆಗಳು, ಪರೀಕ್ಷಾ ಫಲಿತಾಂಶದ ಪ್ರಕಟಣೆಗಳು ಮತ್ತು ಮಾಹಿತಿ')}</p>
         </div>
 
         <button
           onClick={() => markAllReadMutation.mutate()}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-slate-100 hover:bg-slate-200 text-navy-800 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium bg-slate-100 hover:bg-slate-200 text-navy-800 rounded-lg transition-colors cursor-pointer"
         >
           <CheckCheck className="w-3.5 h-3.5" />
-          <span>Mark All Read</span>
+          <span>{t('Mark All Read')}</span>
         </button>
       </div>
 
@@ -94,9 +95,9 @@ export const Notifications: React.FC = () => {
               {!notif.is_read && (
                 <button
                   onClick={() => markSingleReadMutation.mutate(notif.id)}
-                  className="px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:text-navy-800 hover:bg-slate-100 rounded-md transition-colors flex-shrink-0"
+                  className="px-2.5 py-1 text-[11px] font-medium text-slate-600 hover:text-navy-800 hover:bg-slate-100 rounded-md transition-colors flex-shrink-0 cursor-pointer"
                 >
-                  Mark as read
+                  {t('Mark as read', 'ಓದಲಾಗಿದೆ ಎಂದು ಗುರುತಿಸಿ')}
                 </button>
               )}
             </Card>
@@ -104,8 +105,8 @@ export const Notifications: React.FC = () => {
         ) : (
           <div className="py-12 text-center text-slate bg-surface rounded-xl border border-border-subtle">
             <Bell className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-            <p className="font-semibold text-navy-800">No active notifications</p>
-            <p className="text-[12px] text-slate-500">All alerts and system notices have been cleared.</p>
+            <p className="font-semibold text-navy-800">{t('No active notifications', 'ಯಾವುದೇ ಹೊಸ ಅಧಿಸೂಚನೆಗಳಿಲ್ಲ')}</p>
+            <p className="text-[12px] text-slate-500">{t('All alerts and system notices have been cleared.', 'ಎಲ್ಲಾ ಎಚ್ಚರಿಕೆಗಳು ಮತ್ತು ಪ್ರಕಟಣೆಗಳನ್ನು ತೆರವುಗೊಳಿಸಲಾಗಿದೆ.')}</p>
           </div>
         )}
       </div>

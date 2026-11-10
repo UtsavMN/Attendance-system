@@ -28,6 +28,7 @@ import {
 import { apiClient } from '../api/client';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
+import { useLanguage } from '../context/LanguageContext';
 import { ClassGroup, StudentListItem } from '../types';
 import { downloadAuthorizedFile } from '../utils/download';
 
@@ -59,6 +60,7 @@ interface ClassAnalysisResponse {
 }
 
 export const Reports: React.FC = () => {
+  const { t } = useLanguage();
   const [selectedClassId, setSelectedClassId] = useState<string>('');
   const [analyticsMetric, setAnalyticsMetric] = useState<'attendance' | 'academics'>('attendance');
 
@@ -87,7 +89,7 @@ export const Reports: React.FC = () => {
       let url = '/api/students/?status=ACTIVE';
       if (selectedClassId) url += `&class_id=${selectedClassId}`;
       const res = await apiClient.get(url);
-      return res.data?.results || [];
+      return res.data?.results || (Array.isArray(res.data) ? res.data : []);
     },
   });
 
@@ -113,39 +115,39 @@ export const Reports: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-bold text-navy-800 tracking-tight">Institutional Reports & Analytics</h2>
-        <p className="text-[12px] text-slate">Generate, export, and analyze comparative class attendance and academic metrics</p>
+        <h2 className="text-xl font-bold text-navy-800 tracking-tight">{t('Institutional Reports & Analytics')}</h2>
+        <p className="text-[12px] text-slate">{t('Generate, export, and analyze comparative class attendance and academic metrics')}</p>
       </div>
 
       {/* Summary KPI Tiles */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate uppercase tracking-wider">Total Classes</span>
+            <span className="text-[11px] font-medium text-slate uppercase tracking-wider">{t('Total Classes')}</span>
             <Users className="w-4 h-4 text-slate-400" />
           </div>
           <div className="text-2xl font-bold text-navy-800 mt-1">
             {summary?.total_classes ?? 0}
           </div>
           <span className="text-[11px] text-slate-500">
-            {summary?.total_enrolled ?? 0} active students
+            {summary?.total_enrolled ?? 0} {t('active students')}
           </span>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate uppercase tracking-wider">School Attendance</span>
+            <span className="text-[11px] font-medium text-slate uppercase tracking-wider">{t('School Attendance')}</span>
             <Calendar className="w-4 h-4 text-emerald-600" />
           </div>
           <div className="text-2xl font-bold text-emerald-700 mt-1">
             {summary?.school_attendance_avg !== undefined ? `${summary.school_attendance_avg}%` : 'N/A'}
           </div>
-          <span className="text-[11px] text-slate-500">Active class average</span>
+          <span className="text-[11px] text-slate-500">{t('Active class average')}</span>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate uppercase tracking-wider">Academic Average</span>
+            <span className="text-[11px] font-medium text-slate uppercase tracking-wider">{t('Academic Average')}</span>
             <GraduationCap className="w-4 h-4 text-navy-700" />
           </div>
           <div className="text-2xl font-bold text-navy-800 mt-1">
@@ -154,19 +156,19 @@ export const Reports: React.FC = () => {
               : 'N/A'}
           </div>
           <span className="text-[11px] text-slate-500">
-            {summary?.evaluated_classes_count ?? 0} evaluated classes
+            {summary?.evaluated_classes_count ?? 0} {t('evaluated classes')}
           </span>
         </Card>
 
         <Card className="p-4">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium text-slate uppercase tracking-wider">Mandatory Benchmark</span>
+            <span className="text-[11px] font-medium text-slate uppercase tracking-wider">{t('Mandatory Benchmark')}</span>
             <Award className="w-4 h-4 text-blue-600" />
           </div>
           <div className="text-2xl font-bold text-navy-800 mt-1">
             75.0%
           </div>
-          <span className="text-[11px] text-slate-500">Minimum threshold</span>
+          <span className="text-[11px] text-slate-500">{t('Minimum threshold')}</span>
         </Card>
       </div>
 
@@ -176,10 +178,10 @@ export const Reports: React.FC = () => {
           <div>
             <h3 className="text-base font-bold text-navy-800 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-navy-800" />
-              <span>Class-Wise Comparative Analysis</span>
+              <span>{t('Class-Wise Comparative Analysis')}</span>
             </h3>
             <p className="text-[12px] text-slate mt-0.5">
-              Side-by-side comparison of attendance compliance and academic examination performance across all classes
+              {t('Side-by-side comparison of attendance compliance and academic examination performance across all classes', 'ಎಲ್ಲಾ ತರಗತಿಗಳ ಹಾಜರಾತಿ ಮತ್ತು ಶೈಕ್ಷಣಿಕ ಪರೀಕ್ಷಾ ಸಾಧನೆಯ ತೌಲನಿಕ ನೋಟ')}
             </p>
           </div>
 
@@ -187,23 +189,23 @@ export const Reports: React.FC = () => {
           <div className="inline-flex p-1 bg-slate-100 rounded-lg border border-border-subtle self-start md:self-auto">
             <button
               onClick={() => setAnalyticsMetric('attendance')}
-              className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all ${
+              className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all cursor-pointer ${
                 analyticsMetric === 'attendance'
                   ? 'bg-white text-navy-800 shadow-sm font-semibold'
                   : 'text-slate hover:text-navy-800'
               }`}
             >
-              Attendance Comparison (%)
+              {t('Attendance Comparison (%)')}
             </button>
             <button
               onClick={() => setAnalyticsMetric('academics')}
-              className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all ${
+              className={`px-3 py-1.5 text-[12px] font-medium rounded-md transition-all cursor-pointer ${
                 analyticsMetric === 'academics'
                   ? 'bg-white text-navy-800 shadow-sm font-semibold'
                   : 'text-slate hover:text-navy-800'
               }`}
             >
-              Academic Performance (%)
+              {t('Academic Performance (%)')}
             </button>
           </div>
         </div>
@@ -468,9 +470,9 @@ export const Reports: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center mb-4">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-navy-800">Export Institutional Attendance Roster</h3>
+            <h3 className="text-base font-bold text-navy-800">{t('Export Institutional Attendance Roster')}</h3>
             <p className="text-[12px] text-slate mt-1">
-              Download styled Excel workbook containing term attendance percentages, individual status logs (present, absent, late, excused), and student enrollment metadata.
+              {t('Download styled Excel workbook containing term attendance percentages, individual status logs (present, absent, late, excused), and student enrollment metadata.', 'ಹಾಜರಾತಿ ಶೇಕಡಾವಾರು ಮತ್ತು ವಿದ್ಯಾರ್ಥಿ ವಿವರಗಳ ಎಕ್ಸೆಲ್ ಕಡತ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.')}
             </p>
           </div>
           <div className="mt-6 pt-4 border-t border-border-subtle flex items-center justify-between">
@@ -480,7 +482,7 @@ export const Reports: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] font-semibold bg-navy-800 hover:bg-navy-900 text-white rounded-lg shadow-sm transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Download Excel</span>
+              <span>{t('Download Excel')}</span>
             </button>
           </div>
         </Card>
@@ -490,9 +492,9 @@ export const Reports: React.FC = () => {
             <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-800 flex items-center justify-center mb-4">
               <FileSpreadsheet className="w-5 h-5" />
             </div>
-            <h3 className="text-base font-bold text-navy-800">Export Academic Performance Marks</h3>
+            <h3 className="text-base font-bold text-navy-800">{t('Export Academic Performance Marks')}</h3>
             <p className="text-[12px] text-slate mt-1">
-              Export comprehensive examination marks spreadsheet containing overall averages, letter grades, pass/fail status, and subject breakdown across all enrolled classes.
+              {t('Export comprehensive examination marks spreadsheet containing overall averages, letter grades, pass/fail status, and subject breakdown across all enrolled classes.', 'ಪರೀಕ್ಷಾ ಅಂಕಗಳು, ಗ್ರೇಡ್‌ಗಳು ಮತ್ತು ವಿಷಯವಾರು ಸಾಧನೆಯ ಎಕ್ಸೆಲ್ ಕಡತ ಡೌನ್‌ಲೋಡ್ ಮಾಡಿ.')}
             </p>
           </div>
           <div className="mt-6 pt-4 border-t border-border-subtle flex items-center justify-between">
@@ -502,7 +504,7 @@ export const Reports: React.FC = () => {
               className="inline-flex items-center gap-1.5 px-4 py-2 text-[12px] font-semibold bg-navy-800 hover:bg-navy-900 text-white rounded-lg shadow-sm transition-colors cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Download Excel</span>
+              <span>{t('Download Excel')}</span>
             </button>
           </div>
         </Card>
@@ -512,8 +514,8 @@ export const Reports: React.FC = () => {
       <Card className="p-0 overflow-hidden">
         <div className="p-4 bg-slate-50 border-b border-border-subtle flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h3 className="text-[14px] font-semibold text-navy-800">Individual Student Official PDF Report Cards</h3>
-            <p className="text-[12px] text-slate">Server-rendered vector PDF documents formatted with institutional seal and signatures</p>
+            <h3 className="text-[14px] font-semibold text-navy-800">{t('Individual Student Official PDF Report Cards')}</h3>
+            <p className="text-[12px] text-slate">{t('Server-rendered vector PDF documents formatted with institutional seal and signatures', 'ಶಾಲಾ ಮೊಹರು ಮತ್ತು ಸಹಿಯೊಂದಿಗೆ ಸಿದ್ಧಪಡಿಸಿದ ಅಧಿಕೃತ ಪ್ರಗತಿ ಪತ್ರಿಕೆಗಳು')}</p>
           </div>
 
           <div className="flex items-center gap-2 text-[12px]">
@@ -535,12 +537,12 @@ export const Reports: React.FC = () => {
           <table className="w-full text-left text-[12px]">
             <thead className="bg-slate-50/50 border-b border-border-subtle text-slate uppercase text-[11px]">
               <tr>
-                <th className="py-2.5 px-4">Student</th>
-                <th className="py-2.5 px-4">Admission No</th>
-                <th className="py-2.5 px-4">Class & Section</th>
-                <th className="py-2.5 px-4">Attendance %</th>
-                <th className="py-2.5 px-4">Academic Avg</th>
-                <th className="py-2.5 px-4 text-right">PDF Generator</th>
+                <th className="py-2.5 px-4">{t('Student Name')}</th>
+                <th className="py-2.5 px-4">{t('Admission No')}</th>
+                <th className="py-2.5 px-4">{t('Class & Section')}</th>
+                <th className="py-2.5 px-4">{t('Attendance Rate')}</th>
+                <th className="py-2.5 px-4">{t('Academic Average')}</th>
+                <th className="py-2.5 px-4 text-right">{t('Generate PDF')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
@@ -564,7 +566,7 @@ export const Reports: React.FC = () => {
                         className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 hover:bg-slate-200 text-navy-800 rounded font-medium text-[11px] transition-colors cursor-pointer"
                       >
                         <Printer className="w-3 h-3 text-slate-600" />
-                        <span>Generate PDF</span>
+                        <span>{t('Generate PDF')}</span>
                       </button>
                     </td>
                   </tr>

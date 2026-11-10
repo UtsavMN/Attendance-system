@@ -15,9 +15,11 @@ import {
   LogOut
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const Sidebar: React.FC = () => {
   const { user, school, logout } = useAuth();
+  const { t } = useLanguage();
 
   const navItems = [
     { name: 'Overview', to: '/', icon: LayoutDashboard },
@@ -65,7 +67,7 @@ export const Sidebar: React.FC = () => {
       {/* Navigation Links */}
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-          Main Modules
+          {t('Main Modules')}
         </div>
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -86,7 +88,7 @@ export const Sidebar: React.FC = () => {
                 <>
                   <div className="flex items-center gap-3">
                     <Icon className={`w-4 h-4 ${isActive ? 'text-white' : 'text-slate-500'}`} />
-                    <span>{item.name}</span>
+                    <span>{t(item.name)}</span>
                   </div>
                   {isActive && <ChevronRight className="w-3.5 h-3.5 opacity-60" />}
                 </>
@@ -116,7 +118,7 @@ export const Sidebar: React.FC = () => {
                 {user?.full_name || user?.username}
               </p>
               <p className="text-[10px] text-slate font-medium capitalize truncate">
-                {user?.role?.replace('_', ' ').toLowerCase() || 'Administrator'}
+                {t('Administrator')}
               </p>
             </div>
           </div>

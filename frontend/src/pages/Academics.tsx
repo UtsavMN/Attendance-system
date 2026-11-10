@@ -20,9 +20,11 @@ import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { Examination, GradingScale, ClassGroup } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Academics: React.FC = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'marks' | 'examinations' | 'grading' | 'analytics'>('marks');
 
@@ -304,42 +306,42 @@ export const Academics: React.FC = () => {
       {/* Header and View Switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-navy-800 tracking-tight">Academic Performance & Grading</h2>
-          <p className="text-[12px] text-slate">Manage examinations, input subject marks, and view institutional analytics</p>
+          <h2 className="text-xl font-bold text-navy-800 tracking-tight">{t('Academic Performance & Grading')}</h2>
+          <p className="text-[12px] text-slate">{t('Manage examination terms, subject marks rosters, and automatic GPA grading')}</p>
         </div>
 
         <div className="flex items-center gap-1.5 p-1 bg-surface border border-border-subtle rounded-xl shadow-sm text-[12px] font-medium">
           <button
             onClick={() => setActiveTab('marks')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
               activeTab === 'marks' ? 'bg-navy-800 text-white font-semibold' : 'text-slate hover:text-navy-800'
             }`}
           >
-            Marks Entry
+            {t('Marks Entry')}
           </button>
           <button
             onClick={() => setActiveTab('examinations')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
               activeTab === 'examinations' ? 'bg-navy-800 text-white font-semibold' : 'text-slate hover:text-navy-800'
             }`}
           >
-            Examinations
+            {t('Examinations')}
           </button>
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
               activeTab === 'analytics' ? 'bg-navy-800 text-white font-semibold' : 'text-slate hover:text-navy-800'
             }`}
           >
-            Class Analytics
+            {t('Class-Wise Comparative Analysis', 'ತರಗತಿ ವಿಶ್ಲೇಷಣೆ')}
           </button>
           <button
             onClick={() => setActiveTab('grading')}
-            className={`px-3 py-1.5 rounded-lg transition-colors ${
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
               activeTab === 'grading' ? 'bg-navy-800 text-white font-semibold' : 'text-slate hover:text-navy-800'
             }`}
           >
-            Grading Scales
+            {t('Grading Scales')}
           </button>
         </div>
       </div>
@@ -459,7 +461,7 @@ export const Academics: React.FC = () => {
                   className="px-3 py-1.5 text-[11px] font-semibold bg-navy-800 hover:bg-navy-900 text-white rounded-md flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  <span>{saveMarksMutation.isPending ? 'Saving...' : 'Save Marks'}</span>
+                  <span>{saveMarksMutation.isPending ? t('Saving...', 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...') : t('Save Marks')}</span>
                 </button>
                 {activeExam && !activeExam.is_published && (
                   <button
@@ -468,11 +470,11 @@ export const Academics: React.FC = () => {
                     className="px-3 py-1.5 text-[11px] font-semibold bg-emerald-700 hover:bg-emerald-800 text-white rounded-md flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>{publishExamMutation.isPending ? 'Publishing...' : 'Save & Publish'}</span>
+                    <span>{publishExamMutation.isPending ? t('Publishing...', 'ಪ್ರಕಟಿಸಲಾಗುತ್ತಿದೆ...') : t('Save & Publish')}</span>
                   </button>
                 )}
                 {activeExam?.is_published && (
-                  <Badge variant="green" size="sm">Results Published</Badge>
+                  <Badge variant="green" size="sm">{t('Results Published')}</Badge>
                 )}
               </div>
             </div>
@@ -481,13 +483,13 @@ export const Academics: React.FC = () => {
               <table className="w-full text-left text-[12px]">
                 <thead className="bg-slate-50/50 border-b border-border-subtle text-slate uppercase text-[11px]">
                   <tr>
-                    <th className="py-2.5 px-4 w-16">Roll #</th>
-                    <th className="py-2.5 px-4">Student Name</th>
-                    <th className="py-2.5 px-4">Admission No</th>
-                    <th className="py-2.5 px-4 text-center">Marks Obtained (/{sheetData?.exam_subject?.max_marks || 100})</th>
-                    <th className="py-2.5 px-4 text-center">Absent?</th>
-                    <th className="py-2.5 px-4 text-center">Grade</th>
-                    <th className="py-2.5 px-4">Teacher Evaluation Remarks</th>
+                    <th className="py-2.5 px-4 w-16">{t('Roll #')}</th>
+                    <th className="py-2.5 px-4">{t('Student Name')}</th>
+                    <th className="py-2.5 px-4">{t('Admission No')}</th>
+                    <th className="py-2.5 px-4 text-center">{t('Marks Obtained')} (/{sheetData?.exam_subject?.max_marks || 100})</th>
+                    <th className="py-2.5 px-4 text-center">{t('Absent')}?</th>
+                    <th className="py-2.5 px-4 text-center">{t('Grade')}</th>
+                    <th className="py-2.5 px-4">{t('Teacher Evaluation Remarks')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-subtle">
@@ -593,7 +595,7 @@ export const Academics: React.FC = () => {
                   className="px-4 py-2 bg-navy-800 hover:bg-navy-900 text-white text-[12px] font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
-                  <span>{saveMarksMutation.isPending ? 'Saving Marks...' : 'Save Examination Marks'}</span>
+                  <span>{saveMarksMutation.isPending ? t('Saving...', 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...') : t('Save Examination Marks')}</span>
                 </button>
                 {activeExam && !activeExam.is_published && (
                   <button
@@ -602,7 +604,7 @@ export const Academics: React.FC = () => {
                     className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-[12px] font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <Send className="w-4 h-4" />
-                    <span>{publishExamMutation.isPending ? 'Publishing...' : 'Save & Publish Results'}</span>
+                    <span>{publishExamMutation.isPending ? t('Publishing...', 'ಪ್ರಕಟಿಸಲಾಗುತ್ತಿದೆ...') : t('Save & Publish Results')}</span>
                   </button>
                 )}
               </div>

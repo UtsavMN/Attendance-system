@@ -21,11 +21,13 @@ import {
 import { apiClient } from '../api/client';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
+import { useLanguage } from '../context/LanguageContext';
 import { ClassGroup, Section, Subject, AttendanceSheetStudent, AttendanceSessionItem } from '../types';
 
 export const Attendance: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   // Navigation & selection state
   const todayStr = new Date().toISOString().split('T')[0];
@@ -465,14 +467,14 @@ export const Attendance: React.FC = () => {
                     onClick={() => handleMarkAll('PRESENT')}
                     className="px-3 py-1.5 text-[11px] font-semibold bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors cursor-pointer"
                   >
-                    Mark All Present
+                    {t('Mark All Present')}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleMarkAll('ABSENT')}
                     className="px-3 py-1.5 text-[11px] font-semibold bg-rose-50 text-rose-800 hover:bg-rose-100 border border-rose-200 rounded-lg transition-colors cursor-pointer"
                   >
-                    Mark All Absent
+                    {t('Mark All Absent', 'ಎಲ್ಲರೂ ಗೈರುಹಾಜರು')}
                   </button>
                   <button
                     type="button"
@@ -481,7 +483,7 @@ export const Attendance: React.FC = () => {
                     className="px-4 py-1.5 text-[12px] font-bold bg-navy-800 hover:bg-navy-900 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
                   >
                     <Save className="w-4 h-4" />
-                    <span>{saveAttendanceMutation.isPending ? 'Saving...' : 'Save Attendance'}</span>
+                    <span>{saveAttendanceMutation.isPending ? t('Saving...', 'ಉಳಿಸಲಾಗುತ್ತಿದೆ...') : t('Save Attendance')}</span>
                   </button>
                 </div>
               </div>
@@ -492,10 +494,10 @@ export const Attendance: React.FC = () => {
           <Card className="p-0 overflow-hidden">
             <div className="p-3 bg-slate-50 border-b border-border-subtle flex items-center justify-between">
               <span className="text-[12px] font-semibold text-navy-800">
-                Student Enrollment Roster ({studentSheet.length} Students)
+                {t('Student Directory')} ({studentSheet.length})
               </span>
               <span className="text-[11px] text-slate">
-                Click Present or Absent to mark each student
+                {t('Click Present or Absent to mark each student', 'ಪ್ರತಿ ವಿದ್ಯಾರ್ಥಿಗೆ ಹಾಜರು ಅಥವಾ ಗೈರುಹಾಜರು ಆಯ್ಕೆಮಾಡಿ')}
               </span>
             </div>
 
@@ -503,10 +505,10 @@ export const Attendance: React.FC = () => {
               <table className="w-full text-left text-[12px]">
                 <thead className="bg-slate-50/50 border-b border-border-subtle text-slate uppercase text-[11px]">
                   <tr>
-                    <th className="py-2.5 px-4 w-16">Roll #</th>
-                    <th className="py-2.5 px-4">Student Name</th>
-                    <th className="py-2.5 px-4">Admission Number</th>
-                    <th className="py-2.5 px-4 text-center w-56">Attendance Status</th>
+                    <th className="py-2.5 px-4 w-16">{t('Roll #')}</th>
+                    <th className="py-2.5 px-4">{t('Student Name')}</th>
+                    <th className="py-2.5 px-4">{t('Admission Number')}</th>
+                    <th className="py-2.5 px-4 text-center w-56">{t('Status')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-subtle">

@@ -1,23 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search,
-  Filter,
   Plus,
   Download,
-  MoreVertical,
   ChevronLeft,
   ChevronRight,
   User,
   GraduationCap,
-  Calendar,
-  AlertTriangle,
-  FileSpreadsheet,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  ArrowUpDown,
   Trash2
 } from 'lucide-react';
 import { apiClient, API_BASE_URL } from '../api/client';
@@ -25,11 +16,13 @@ import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { StudentListItem, ClassGroup } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Students: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const [search, setSearch] = useState('');
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -38,7 +31,7 @@ export const Students: React.FC = () => {
     searchParams.get('filter') === 'attention' ? 'low' : ''
   );
   const [page, setPage] = useState(1);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(searchParams.get('action') === 'new');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Form State for Add Student
   const [formData, setFormData] = useState({
@@ -68,24 +61,12 @@ export const Students: React.FC = () => {
     guardian_email: '',
   });
 
-  // Query Students
-  const { data: studentsData, isLoading } = useQuery({
-    queryKey: ['students', search, selectedClass, selectedStatus, page],
-    queryFn: async () => {
-      let url = `/api/students/?page=${page}&status=${selectedStatus}`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      if (selectedClass) url += `&class_id=${selectedClass}`;
-      const res = await apiClient.get(url);
-      return res.data;
-    },
-  });
-
-  // Query Classes for filter dropdown & form
-  const { data: rawClassesData } = useQuery({
+  // Query Classes for filter dropdown & modal form
+  const { data: rawClassesData, isLoading: isClassesLoading } = useQuery({
     queryKey: ['classes'],
     queryFn: async () => {
       const res = await apiClient.get('/api/classes/');
-      return res.data;
+      return res.data?.results || (Array.isArray(res.data) ? res.data : []);
     },
   });
 
@@ -106,12 +87,37 @@ export const Students: React.FC = () => {
     ? rawAcademicYears
     : (rawAcademicYears as any)?.results || [];
 
+  // Ensure default class and section are selected whenever classesList is populated
+  useEffect(() => {
+    if (classesList.length > 0) {
+      const currentClassExists = classesList.some((c) => String(c.id) === String(formData.class_id));
+      if (!formData.class_id || !currentClassExists) {
+        const defaultClass = classesList[0];
+        const defaultSec = defaultClass.sections?.[0];
+        setFormData((prev) => ({
+          ...prev,
+          class_id: String(defaultClass.id),
+          section_id: defaultSec ? String(defaultSec.id) : '',
+        }));
+      }
+    }
+  }, [classesList]);
+
+  // Handle URL query action=new
+  useEffect(() => {
+    if (searchParams.get('action') === 'new') {
+      handleOpenAddModal();
+      navigate('/students', { replace: true });
+    }
+  }, [searchParams, classesList]);
+
   const handleOpenAddModal = () => {
     if (classesList.length > 0) {
-      const activeClass = classesList.find((c) => String(c.id) === formData.class_id) || classesList[0];
+      const activeClass = classesList.find((c) => String(c.id) === String(formData.class_id)) || classesList[0];
       const activeSec = activeClass.sections?.[0];
       setFormData((prev) => ({
         ...prev,
+        admission_number: `ADM-2025-${Math.floor(100 + Math.random() * 900)}`,
         class_id: String(activeClass.id),
         section_id: activeSec ? String(activeSec.id) : '',
       }));
@@ -119,20 +125,27 @@ export const Students: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
-  React.useEffect(() => {
-    if (classesList.length > 0) {
-      const classExists = classesList.some((c) => String(c.id) === formData.class_id);
-      if (!formData.class_id || !classExists) {
-        const firstClass = classesList[0];
-        const firstSec = firstClass.sections?.[0];
-        setFormData((prev) => ({
-          ...prev,
-          class_id: String(firstClass.id),
-          section_id: firstSec ? String(firstSec.id) : '',
-        }));
-      }
-    }
-  }, [classesList, formData.class_id]);
+  const handleClassChange = (newClassId: string) => {
+    const selected = classesList.find((c) => String(c.id) === String(newClassId));
+    const firstSec = selected?.sections?.[0];
+    setFormData((prev) => ({
+      ...prev,
+      class_id: newClassId,
+      section_id: firstSec ? String(firstSec.id) : '',
+    }));
+  };
+
+  // Query Students
+  const { data: studentsData, isLoading } = useQuery({
+    queryKey: ['students', search, selectedClass, selectedStatus, page],
+    queryFn: async () => {
+      let url = `/api/students/?page=${page}&status=${selectedStatus}`;
+      if (search) url += `&search=${encodeURIComponent(search)}`;
+      if (selectedClass) url += `&class_id=${selectedClass}`;
+      const res = await apiClient.get(url);
+      return res.data;
+    },
+  });
 
   // Add Student Mutation
   const createStudentMutation = useMutation({
@@ -142,8 +155,9 @@ export const Students: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-overview'] });
+      queryClient.invalidateQueries({ queryKey: ['report-students'] });
       setIsAddModalOpen(false);
-      alert('Student record successfully registered!');
+      alert(t('Student record successfully registered!', 'ವಿದ್ಯಾರ್ಥಿ ವಿವರ ಯಶಸ್ವಿಯಾಗಿ ನೋಂದಣಿಯಾಗಿದೆ!'));
     },
     onError: (err: any) => {
       alert(err.response?.data?.detail || 'Failed to create student. Please verify admission number uniqueness.');
@@ -158,7 +172,8 @@ export const Students: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['students'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-overview'] });
-      alert('Student record deleted successfully.');
+      queryClient.invalidateQueries({ queryKey: ['report-students'] });
+      alert(t('Student record deleted successfully.', 'ವಿದ್ಯಾರ್ಥಿ ವಿವರ ಯಶಸ್ವಿಯಾಗಿ ಅಳಿಸಲಾಗಿದೆ.'));
     },
     onError: (err: any) => {
       alert(err.response?.data?.detail || 'Failed to delete student.');
@@ -176,14 +191,15 @@ export const Students: React.FC = () => {
     const currentAY = academicYearsList?.find((ay: any) => ay.is_current) || academicYearsList?.[0];
     const payload = {
       ...formData,
-      academic_year_id: currentAY?.id,
+      class_id: formData.class_id ? parseInt(formData.class_id) : undefined,
       section_id: formData.section_id ? parseInt(formData.section_id) : undefined,
+      academic_year_id: currentAY?.id,
     };
     createStudentMutation.mutate(payload);
   };
 
   // Client-side attendance filtering if selected
-  let studentsList: StudentListItem[] = studentsData?.results || [];
+  let studentsList: StudentListItem[] = studentsData?.results || (Array.isArray(studentsData) ? studentsData : []);
   if (attendanceFilter === 'low') {
     studentsList = studentsList.filter((s) => s.attendance_percentage < 75);
   } else if (attendanceFilter === 'warning') {
@@ -192,15 +208,15 @@ export const Students: React.FC = () => {
     studentsList = studentsList.filter((s) => s.attendance_percentage >= 85);
   }
 
-  const selectedClassObj = classesList.find((c) => c.id === parseInt(formData.class_id));
+  const selectedClassObj = classesList.find((c) => String(c.id) === String(formData.class_id));
 
   return (
     <div className="space-y-5">
       {/* Top Action Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-navy-800 tracking-tight">Student Directory</h2>
-          <p className="text-[12px] text-slate">Manage enrolled students, digital profiles, attendance & grades</p>
+          <h2 className="text-xl font-bold text-navy-800 tracking-tight">{t('Student Directory')}</h2>
+          <p className="text-[12px] text-slate">{t('Manage enrolled students, digital profiles, attendance & grades')}</p>
         </div>
         <div className="flex items-center gap-2.5">
           <a
@@ -210,14 +226,14 @@ export const Students: React.FC = () => {
             className="inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-medium rounded-lg border border-border-subtle bg-surface hover:bg-slate-50 text-navy-800 shadow-sm transition-colors"
           >
             <Download className="w-3.5 h-3.5 text-slate" />
-            <span>Export Roster</span>
+            <span>{t('Export Roster')}</span>
           </a>
           <button
             onClick={handleOpenAddModal}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold rounded-lg bg-navy-800 hover:bg-navy-900 text-white shadow-sm transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold rounded-lg bg-navy-800 hover:bg-navy-900 text-white shadow-sm transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>Add Student</span>
+            <span>{t('Add Student')}</span>
           </button>
         </div>
       </div>
@@ -230,7 +246,7 @@ export const Students: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
             <input
               type="text"
-              placeholder="Search by student name or admission number..."
+              placeholder={t('Search by student name or admission number...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="w-full pl-9 pr-3 py-1.5 text-[13px] bg-slate-50/50 border border-border-subtle rounded-lg focus:outline-none focus:border-navy-800 transition-colors"
@@ -244,7 +260,7 @@ export const Students: React.FC = () => {
               onChange={(e) => setSelectedClass(e.target.value)}
               className="px-3 py-1.5 text-[12px] font-medium bg-surface border border-border-subtle rounded-lg focus:outline-none focus:border-navy-800"
             >
-              <option value="">All Classes</option>
+              <option value="">{t('All Classes')}</option>
               {classesList.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
@@ -258,10 +274,10 @@ export const Students: React.FC = () => {
               onChange={(e) => setAttendanceFilter(e.target.value)}
               className="px-3 py-1.5 text-[12px] font-medium bg-surface border border-border-subtle rounded-lg focus:outline-none focus:border-navy-800"
             >
-              <option value="">Attendance: All</option>
-              <option value="high">High (&gt;85%)</option>
-              <option value="warning">Warning (75-85%)</option>
-              <option value="low">At Risk (&lt;75%)</option>
+              <option value="">{t('Attendance: All')}</option>
+              <option value="high">{t('High (>85%)')}</option>
+              <option value="warning">{t('Warning (75-85%)')}</option>
+              <option value="low">{t('At Risk (<75%)')}</option>
             </select>
 
             {/* Status Filter */}
@@ -270,11 +286,11 @@ export const Students: React.FC = () => {
               onChange={(e) => setSelectedStatus(e.target.value)}
               className="px-3 py-1.5 text-[12px] font-medium bg-surface border border-border-subtle rounded-lg focus:outline-none focus:border-navy-800"
             >
-              <option value="ACTIVE">Active</option>
-              <option value="INACTIVE">Inactive</option>
-              <option value="GRADUATED">Graduated</option>
-              <option value="SUSPENDED">Suspended</option>
-              <option value="ARCHIVED">Archived</option>
+              <option value="ACTIVE">{t('Active')}</option>
+              <option value="INACTIVE">{t('Inactive')}</option>
+              <option value="GRADUATED">{t('GRADUATED')}</option>
+              <option value="SUSPENDED">{t('SUSPENDED')}</option>
+              <option value="ARCHIVED">{t('ARCHIVED')}</option>
             </select>
           </div>
         </div>
@@ -286,14 +302,14 @@ export const Students: React.FC = () => {
           <table className="w-full text-left text-[13px]">
             <thead className="bg-slate-50/75 border-b border-border-subtle text-[11px] font-semibold uppercase tracking-wider text-slate">
               <tr>
-                <th className="py-3 px-5">Student Details</th>
-                <th className="py-3 px-4">Admission No</th>
-                <th className="py-3 px-4">Class & Section</th>
-                <th className="py-3 px-4">Roll No</th>
-                <th className="py-3 px-4">Attendance</th>
-                <th className="py-3 px-4">Academic Avg</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-5 text-right">Actions</th>
+                <th className="py-3 px-5">{t('Student Details')}</th>
+                <th className="py-3 px-4">{t('Admission No')}</th>
+                <th className="py-3 px-4">{t('Class & Section')}</th>
+                <th className="py-3 px-4">{t('Roll No')}</th>
+                <th className="py-3 px-4">{t('Attendance')}</th>
+                <th className="py-3 px-4">{t('Academic Avg')}</th>
+                <th className="py-3 px-4">{t('Status')}</th>
+                <th className="py-3 px-5 text-right">{t('Actions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border-subtle">
@@ -329,7 +345,7 @@ export const Students: React.FC = () => {
                           <div className="font-semibold text-navy-800 hover:text-accent-blue transition-colors">
                             {st.full_name}
                           </div>
-                          <div className="text-[11px] text-slate capitalize">{st.gender.toLowerCase()}</div>
+                          <div className="text-[11px] text-slate capitalize">{t(st.gender === 'MALE' ? 'Male' : st.gender === 'FEMALE' ? 'Female' : 'Other')}</div>
                         </div>
                       </div>
                     </td>
@@ -357,7 +373,7 @@ export const Students: React.FC = () => {
                       </Badge>
                     </td>
                     <td className="py-3 px-4">
-                      {st.academic_average !== null ? (
+                      {st.academic_average !== null && st.academic_average !== undefined ? (
                         <span className="font-semibold text-navy-800">
                           {st.academic_average}%
                         </span>
@@ -370,7 +386,7 @@ export const Students: React.FC = () => {
                         variant={st.status === 'ACTIVE' ? 'green' : 'slate'}
                         size="sm"
                       >
-                        {st.status}
+                        {t(st.status)}
                       </Badge>
                     </td>
                     <td className="py-3 px-5 text-right" onClick={(e) => e.stopPropagation()}>
@@ -379,11 +395,11 @@ export const Students: React.FC = () => {
                           onClick={() => navigate(`/students/${st.id}`)}
                           className="px-2.5 py-1 text-[11px] font-medium text-navy-800 bg-slate-100 hover:bg-slate-200 rounded-md transition-colors"
                         >
-                          View Profile
+                          {t('View Profile')}
                         </button>
                         <button
                           onClick={() => handleDeleteStudent(st.id, st.full_name)}
-                          title="Delete Student"
+                          title={t('Delete')}
                           className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-md transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -396,14 +412,14 @@ export const Students: React.FC = () => {
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate">
                     <User className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                    <p className="font-bold text-navy-800 text-[14px]">No Students Registered Yet</p>
-                    <p className="text-[12px] text-slate-500 mt-1 mb-4">Register your first student to begin tracking attendance and academic records.</p>
+                    <p className="font-bold text-navy-800 text-[14px]">{t('No Students Registered Yet', 'ಇನ್ನೂ ಯಾವುದೇ ವಿದ್ಯಾರ್ಥಿಗಳು ನೋಂದಣಿಯಾಗಿಲ್ಲ')}</p>
+                    <p className="text-[12px] text-slate-500 mt-1 mb-4">{t('Register your first student to begin tracking attendance and academic records.', 'ಹಾಜರಾತಿ ಮತ್ತು ಶೈಕ್ಷಣಿಕ ದಾಖಲೆಗಳನ್ನು ಪ್ರಾರಂಭಿಸಲು ಮೊದಲ ವಿದ್ಯಾರ್ಥಿಯನ್ನು ನೋಂದಾಯಿಸಿ.')}</p>
                     <button
                       onClick={handleOpenAddModal}
                       className="inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-semibold rounded-lg bg-navy-800 hover:bg-navy-900 text-white shadow-sm cursor-pointer"
                     >
                       <Plus className="w-4 h-4" />
-                      <span>Register New Student</span>
+                      <span>{t('Register New Student')}</span>
                     </button>
                   </td>
                 </tr>
@@ -444,19 +460,19 @@ export const Students: React.FC = () => {
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Register New Student"
-        subtitle="Complete student personal, academic enrollment, and guardian profiles"
+        title={t('Register New Student')}
+        subtitle={t('Complete student personal, academic enrollment, and guardian profiles', 'ವಿದ್ಯಾರ್ಥಿಯ ವೈಯಕ್ತಿಕ, ಶೈಕ್ಷಣಿಕ ದಾಖಲಾತಿ ಮತ್ತು ಪೋಷಕರ ವಿವರಗಳನ್ನು ಪೂರ್ಣಗೊಳಿಸಿ')}
         maxWidth="2xl"
       >
         <form onSubmit={handleCreateSubmit} className="space-y-6">
           {/* Section 1: Personal Information */}
           <div>
             <h4 className="text-[13px] font-semibold text-navy-800 border-b border-border-subtle pb-1.5 mb-3 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-slate" /> Personal Information
+              <User className="w-3.5 h-3.5 text-slate" /> {t('Personal Information')}
             </h4>
             <div className="grid grid-cols-2 gap-3.5 text-[12px]">
               <div>
-                <label className="block text-slate-700 font-medium mb-1">First Name *</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('First Name *')}</label>
                 <input
                   type="text"
                   required
@@ -467,7 +483,7 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Last Name *</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Last Name *')}</label>
                 <input
                   type="text"
                   required
@@ -478,7 +494,7 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Date of Birth *</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Date of Birth *')}</label>
                 <input
                   type="date"
                   required
@@ -488,19 +504,19 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Gender *</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Gender *')}</label>
                 <select
                   value={formData.gender}
                   onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
                   className="w-full px-3 py-1.5 border border-border-subtle rounded-md focus:border-navy-800 outline-none"
                 >
-                  <option value="MALE">Male</option>
-                  <option value="FEMALE">Female</option>
-                  <option value="OTHER">Other</option>
+                  <option value="MALE">{t('Male')}</option>
+                  <option value="FEMALE">{t('Female')}</option>
+                  <option value="OTHER">{t('Other')}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Blood Group</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Blood Group')}</label>
                 <input
                   type="text"
                   value={formData.blood_group}
@@ -510,7 +526,7 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Photo URL (Optional)</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Photo URL (Optional)')}</label>
                 <input
                   type="url"
                   value={formData.photo_url}
@@ -525,11 +541,11 @@ export const Students: React.FC = () => {
           {/* Section 2: Admission & Enrollment */}
           <div>
             <h4 className="text-[13px] font-semibold text-navy-800 border-b border-border-subtle pb-1.5 mb-3 flex items-center gap-1.5">
-              <GraduationCap className="w-3.5 h-3.5 text-slate" /> Admission & Class Assignment
+              <GraduationCap className="w-3.5 h-3.5 text-slate" /> {t('Admission & Class Assignment')}
             </h4>
             <div className="grid grid-cols-3 gap-3.5 text-[12px]">
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Admission Number *</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Admission Number *')}</label>
                 <input
                   type="text"
                   required
@@ -539,7 +555,7 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Admission Date</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Admission Date')}</label>
                 <input
                   type="date"
                   value={formData.admission_date}
@@ -548,10 +564,10 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Class *</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Class *')}</label>
                 {classesList.length === 0 ? (
                   <div className="p-2 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-800">
-                    No classes exist yet.{' '}
+                    {isClassesLoading ? t('Loading...') : t('No classes exist yet.')}{' '}
                     <button
                       type="button"
                       onClick={() => {
@@ -560,37 +576,30 @@ export const Students: React.FC = () => {
                       }}
                       className="font-bold underline text-navy-800"
                     >
-                      Create Class first &rarr;
+                      {t('Create Class')} &rarr;
                     </button>
                   </div>
                 ) : (
                   <select
                     required
                     value={formData.class_id}
-                    onChange={(e) => {
-                      const newClassId = e.target.value;
-                      const c = classesList.find((item) => item.id === parseInt(newClassId));
-                      const firstSec = c?.sections?.[0];
-                      setFormData({
-                        ...formData,
-                        class_id: newClassId,
-                        section_id: firstSec ? String(firstSec.id) : '',
-                      });
-                    }}
+                    onChange={(e) => handleClassChange(e.target.value)}
                     className="w-full px-3 py-1.5 border border-border-subtle rounded-md focus:border-navy-800 outline-none"
                   >
-                    <option value="" disabled>Select Grade</option>
+                    <option value="" disabled>{t('Select Grade')}</option>
                     {classesList.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                      <option key={c.id} value={String(c.id)}>
+                        {c.name} {c.code ? `(${c.code})` : ''}
+                      </option>
                     ))}
                   </select>
                 )}
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Section *</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Section *')}</label>
                 {selectedClassObj && (!selectedClassObj.sections || selectedClassObj.sections.length === 0) ? (
                   <div className="p-2 bg-amber-50 border border-amber-200 rounded text-[11px] text-amber-800">
-                    No sections in this class.{' '}
+                    {t('No sections in this class.')}{' '}
                     <button
                       type="button"
                       onClick={() => {
@@ -599,7 +608,7 @@ export const Students: React.FC = () => {
                       }}
                       className="font-bold underline text-navy-800"
                     >
-                      Add Section &rarr;
+                      {t('Add Section')} &rarr;
                     </button>
                   </div>
                 ) : (
@@ -610,15 +619,17 @@ export const Students: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, section_id: e.target.value })}
                     className="w-full px-3 py-1.5 border border-border-subtle rounded-md focus:border-navy-800 outline-none disabled:bg-slate-100"
                   >
-                    <option value="" disabled>Select Section</option>
+                    <option value="" disabled>{t('Select Section')}</option>
                     {selectedClassObj?.sections?.map((s) => (
-                      <option key={s.id} value={s.id}>Section {s.name}</option>
+                      <option key={s.id} value={String(s.id)}>
+                        {t('Section')} {s.name}
+                      </option>
                     ))}
                   </select>
                 )}
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Roll Number</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Roll Number')}</label>
                 <input
                   type="text"
                   value={formData.roll_number}
@@ -628,14 +639,14 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Status</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Status')}</label>
                 <select
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                   className="w-full px-3 py-1.5 border border-border-subtle rounded-md focus:border-navy-800 outline-none"
                 >
-                  <option value="ACTIVE">Active</option>
-                  <option value="INACTIVE">Inactive</option>
+                  <option value="ACTIVE">{t('Active')}</option>
+                  <option value="INACTIVE">{t('Inactive')}</option>
                 </select>
               </div>
             </div>
@@ -644,11 +655,11 @@ export const Students: React.FC = () => {
           {/* Section 3: Guardian Details */}
           <div>
             <h4 className="text-[13px] font-semibold text-navy-800 border-b border-border-subtle pb-1.5 mb-3 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-slate" /> Primary Guardian Information
+              <User className="w-3.5 h-3.5 text-slate" /> {t('Primary Guardian Information')}
             </h4>
             <div className="grid grid-cols-2 gap-3.5 text-[12px]">
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Guardian Full Name</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Guardian Full Name')}</label>
                 <input
                   type="text"
                   value={formData.guardian_name}
@@ -658,19 +669,19 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Relationship</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Relationship')}</label>
                 <select
                   value={formData.guardian_relationship}
                   onChange={(e) => setFormData({ ...formData, guardian_relationship: e.target.value })}
                   className="w-full px-3 py-1.5 border border-border-subtle rounded-md focus:border-navy-800 outline-none"
                 >
-                  <option value="Father">Father</option>
-                  <option value="Mother">Mother</option>
-                  <option value="Legal Guardian">Legal Guardian</option>
+                  <option value="Father">{t('Father')}</option>
+                  <option value="Mother">{t('Mother')}</option>
+                  <option value="Legal Guardian">{t('Legal Guardian')}</option>
                 </select>
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Guardian Phone</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Guardian Phone')}</label>
                 <input
                   type="tel"
                   value={formData.guardian_phone}
@@ -680,7 +691,7 @@ export const Students: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block text-slate-700 font-medium mb-1">Guardian Email</label>
+                <label className="block text-slate-700 font-medium mb-1">{t('Guardian Email')}</label>
                 <input
                   type="email"
                   value={formData.guardian_email}
@@ -696,16 +707,16 @@ export const Students: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="px-4 py-2 text-[12px] font-medium rounded-lg border border-border-subtle text-slate-700 hover:bg-slate-100"
+              className="px-4 py-2 text-[12px] font-medium rounded-lg border border-border-subtle text-slate-700 hover:bg-slate-100 cursor-pointer"
             >
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               type="submit"
               disabled={createStudentMutation.isPending}
-              className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-navy-800 text-white hover:bg-navy-900 disabled:opacity-50"
+              className="px-4 py-2 text-[12px] font-semibold rounded-lg bg-navy-800 text-white hover:bg-navy-900 disabled:opacity-50 cursor-pointer"
             >
-              {createStudentMutation.isPending ? 'Registering...' : 'Save Student Record'}
+              {createStudentMutation.isPending ? t('Registering...') : t('Save Student Record')}
             </button>
           </div>
         </form>

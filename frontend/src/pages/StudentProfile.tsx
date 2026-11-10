@@ -7,32 +7,26 @@ import {
   GraduationCap,
   TrendingUp,
   Award,
-  FileText,
-  Phone,
-  Mail,
-  MapPin,
-  AlertCircle,
   Download,
   Plus,
   ChevronLeft,
   CheckCircle2,
-  Clock,
-  XCircle,
-  ShieldAlert,
-  Percent
+  AlertCircle
 } from 'lucide-react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, LineChart, Line } from 'recharts';
-import { apiClient, API_BASE_URL } from '../api/client';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { apiClient } from '../api/client';
 import { downloadAuthorizedFile } from '../utils/download';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Modal } from '../components/common/Modal';
 import { StudentFullProfile } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 export const StudentProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'attendance' | 'academics' | 'performance' | 'activity'>('overview');
   const [isRemarkModalOpen, setIsRemarkModalOpen] = useState(false);
@@ -61,7 +55,7 @@ export const StudentProfile: React.FC = () => {
       setIsRemarkModalOpen(false);
       setRemarkTitle('');
       setRemarkDescription('');
-      alert('Remark successfully recorded.');
+      alert(t('Remark successfully recorded.', 'ಷರಾ ಯಶಸ್ವಿಯಾಗಿ ದಾಖಲಾಗಿದೆ.'));
     }
   });
 
@@ -94,12 +88,12 @@ export const StudentProfile: React.FC = () => {
   if (error || !profile) {
     return (
       <div className="p-12 text-center bg-surface rounded-xl border border-border-subtle">
-        <p className="text-slate font-medium">Student profile not found or server error.</p>
+        <p className="text-slate font-medium">{t('Student profile not found or server error.', 'ವಿದ್ಯಾರ್ಥಿ ಪ್ರೊಫೈಲ್ ಕಂಡುಬಂದಿಲ್ಲ ಅಥವಾ ಸರ್ವರ್ ದೋಷ.')}</p>
         <button
           onClick={() => navigate('/students')}
-          className="mt-4 px-4 py-2 text-[12px] bg-navy-800 text-white rounded-lg"
+          className="mt-4 px-4 py-2 text-[12px] bg-navy-800 text-white rounded-lg cursor-pointer"
         >
-          Return to Student Directory
+          {t('Return to Student Directory', 'ವಿದ್ಯಾರ್ಥಿ ಪಟ್ಟಿಗೆ ಹಿಂತಿರುಗಿ')}
         </button>
       </div>
     );
@@ -113,10 +107,10 @@ export const StudentProfile: React.FC = () => {
       <div>
         <button
           onClick={() => navigate('/students')}
-          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate hover:text-navy-800 transition-colors"
+          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-slate hover:text-navy-800 transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4" />
-          <span>Back to Student Directory</span>
+          <span>{t('Back to Student Directory')}</span>
         </button>
       </div>
 
@@ -141,24 +135,24 @@ export const StudentProfile: React.FC = () => {
                   {student.full_name}
                 </h1>
                 <Badge variant={student.status === 'ACTIVE' ? 'green' : 'slate'} size="sm">
-                  {student.status}
+                  {t(student.status)}
                 </Badge>
                 {attendance_summary.is_low_attendance && (
                   <Badge variant="red" size="sm">
-                    Attendance Warning (&lt;{attendance_summary.threshold}%)
+                    {t('Attendance Warning', 'ಹಾಜರಾತಿ ಎಚ್ಚರಿಕೆ')} (&lt;{attendance_summary.threshold}%)
                   </Badge>
                 )}
               </div>
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[13px] text-slate font-medium">
-                <span className="font-mono text-navy-800">Adm: {student.admission_number}</span>
+                <span className="font-mono text-navy-800">{t('Admission No')}: {student.admission_number}</span>
                 <span>•</span>
                 <span>
-                  {student.current_enrollment?.class_name} - Section {student.current_enrollment?.section_name}
+                  {student.current_enrollment?.class_name} - {t('Section')} {student.current_enrollment?.section_name}
                 </span>
                 <span>•</span>
-                <span>Roll: #{student.current_enrollment?.roll_number || 'N/A'}</span>
+                <span>{t('Roll No')}: #{student.current_enrollment?.roll_number || 'N/A'}</span>
                 <span>•</span>
-                <span>{student.gender === 'MALE' ? 'Male' : student.gender === 'FEMALE' ? 'Female' : 'Other'}</span>
+                <span>{t(student.gender === 'MALE' ? 'Male' : student.gender === 'FEMALE' ? 'Female' : 'Other')}</span>
               </div>
             </div>
           </div>
@@ -166,17 +160,17 @@ export const StudentProfile: React.FC = () => {
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => setIsRemarkModalOpen(true)}
-              className="px-3 py-2 text-[12px] font-medium rounded-lg border border-border-subtle bg-surface hover:bg-slate-50 text-navy-800 transition-colors flex items-center gap-1.5"
+              className="px-3 py-2 text-[12px] font-medium rounded-lg border border-border-subtle bg-surface hover:bg-slate-50 text-navy-800 transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Add Remark</span>
+              <span>{t('Add Remark')}</span>
             </button>
             <button
               onClick={() => downloadAuthorizedFile(`/api/reports/student-report-card-pdf/${student.id}/`, `${student.admission_number}_Report_Card.pdf`)}
               className="px-3.5 py-2 text-[12px] font-semibold rounded-lg bg-navy-800 hover:bg-navy-900 text-white shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>Official PDF Report Card</span>
+              <span>{t('Official PDF Report Card')}</span>
             </button>
           </div>
         </div>
@@ -186,52 +180,52 @@ export const StudentProfile: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
         <Card className="p-4">
           <span className="text-[11px] font-medium text-slate uppercase tracking-wider">
-            Attendance Rate
+            {t('Attendance Rate')}
           </span>
           <div className="text-2xl font-bold text-navy-800 mt-1">
             {attendance_summary.percentage}%
           </div>
           <span className="text-[11px] text-slate-500">
-            {attendance_summary.total_sessions} sessions tracked
+            {attendance_summary.total_sessions} {t('sessions tracked')}
           </span>
         </Card>
         <Card className="p-4">
           <span className="text-[11px] font-medium text-slate uppercase tracking-wider">
-            Days Present
+            {t('Days Present')}
           </span>
           <div className="text-2xl font-bold text-emerald-700 mt-1">
             {attendance_summary.present_count}
           </div>
           <span className="text-[11px] text-slate-500">
-            + {attendance_summary.late_count} late arrivals
+            + {attendance_summary.late_count} {t('Late Arrivals')}
           </span>
         </Card>
         <Card className="p-4">
           <span className="text-[11px] font-medium text-slate uppercase tracking-wider">
-            Days Absent
+            {t('Days Absent')}
           </span>
           <div className="text-2xl font-bold text-rose-700 mt-1">
             {attendance_summary.absent_count}
           </div>
           <span className="text-[11px] text-slate-500">
-            {attendance_summary.excused_count} excused absences
+            {attendance_summary.excused_count} {t('Excused')}
           </span>
         </Card>
         <Card className="p-4">
           <span className="text-[11px] font-medium text-slate uppercase tracking-wider">
-            Academic Average
+            {t('Academic Average')}
           </span>
           <div className="text-2xl font-bold text-navy-800 mt-1">
-            {academic_summary.overall_average !== null ? `${academic_summary.overall_average}%` : 'N/A'}
+            {academic_summary.overall_average !== null && academic_summary.overall_average !== undefined ? `${academic_summary.overall_average}%` : 'N/A'}
           </div>
-          <span className="text-[11px] text-slate-500">All examinations</span>
+          <span className="text-[11px] text-slate-500">{t('All examinations')}</span>
         </Card>
         <Card className="p-4">
           <span className="text-[11px] font-medium text-slate uppercase tracking-wider">
-            Current Grade & GPA
+            {t('Current Grade & GPA')}
           </span>
           <div className="text-2xl font-bold text-navy-800 mt-1">
-            {academic_summary.overall_grade}
+            {academic_summary.overall_grade || 'N/A'}
           </div>
           <span className="text-[11px] text-slate-500">
             GPA: {academic_summary.current_gpa ?? 'N/A'} / 4.0
@@ -240,13 +234,13 @@ export const StudentProfile: React.FC = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="border-b border-border-subtle flex items-center gap-1 select-none">
+      <div className="border-b border-border-subtle flex items-center gap-1 select-none overflow-x-auto">
         {[
-          { key: 'overview', label: 'Overview', icon: User },
-          { key: 'attendance', label: 'Attendance History', icon: Calendar },
-          { key: 'academics', label: 'Academics & Grades', icon: GraduationCap },
-          { key: 'performance', label: 'Performance Analytics', icon: TrendingUp },
-          { key: 'activity', label: 'Activity & Remarks', icon: Award },
+          { key: 'overview', label: t('Overview'), icon: User },
+          { key: 'attendance', label: t('Attendance History'), icon: Calendar },
+          { key: 'academics', label: t('Academics & Grades'), icon: GraduationCap },
+          { key: 'performance', label: t('Performance Analytics'), icon: TrendingUp },
+          { key: 'activity', label: t('Activity & Remarks'), icon: Award },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -254,7 +248,7 @@ export const StudentProfile: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`flex items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 transition-colors ${
+              className={`flex items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
                 isActive
                   ? 'border-navy-800 text-navy-800 font-semibold'
                   : 'border-transparent text-slate hover:text-navy-800 hover:border-slate-300'
@@ -273,82 +267,82 @@ export const StudentProfile: React.FC = () => {
           <Card className="lg:col-span-2 space-y-6">
             <div>
               <h3 className="text-[14px] font-semibold text-navy-800 mb-3 border-b border-border-subtle pb-2">
-                Personal Demographics
+                {t('Personal Demographics')}
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-[12px]">
                 <div>
-                  <span className="text-slate block">Date of Birth</span>
+                  <span className="text-slate block">{t('Date of Birth')}</span>
                   <span className="font-semibold text-navy-800">{student.date_of_birth}</span>
                 </div>
                 <div>
-                  <span className="text-slate block">Blood Group</span>
+                  <span className="text-slate block">{t('Blood Group')}</span>
                   <span className="font-semibold text-navy-800">{student.blood_group || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-slate block">Admission Date</span>
+                  <span className="text-slate block">{t('Admission Date')}</span>
                   <span className="font-semibold text-navy-800">{student.admission_date}</span>
                 </div>
                 <div>
-                  <span className="text-slate block">Email Address</span>
+                  <span className="text-slate block">{t('Email Address')}</span>
                   <span className="font-semibold text-navy-800">{student.email || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-slate block">Contact Phone</span>
+                  <span className="text-slate block">{t('Contact Phone')}</span>
                   <span className="font-semibold text-navy-800">{student.phone || 'N/A'}</span>
                 </div>
                 <div>
-                  <span className="text-slate block">Previous School</span>
+                  <span className="text-slate block">{t('Previous School')}</span>
                   <span className="font-semibold text-navy-800">{student.previous_school || 'None'}</span>
                 </div>
               </div>
               <div className="mt-3 text-[12px]">
-                <span className="text-slate block">Residential Address</span>
+                <span className="text-slate block">{t('Residential Address')}</span>
                 <span className="font-medium text-navy-800">{student.address || 'Address on record'}</span>
               </div>
             </div>
 
             <div>
               <h3 className="text-[14px] font-semibold text-navy-800 mb-3 border-b border-border-subtle pb-2">
-                Guardian Information
+                {t('Guardian Information')}
               </h3>
               {student.guardians && student.guardians.length > 0 ? (
                 student.guardians.map((g, idx) => (
                   <div key={idx} className="p-3.5 bg-slate-50/60 rounded-lg border border-border-subtle grid grid-cols-2 md:grid-cols-4 gap-3 text-[12px]">
                     <div>
-                      <span className="text-slate block">Name</span>
+                      <span className="text-slate block">{t('Name')}</span>
                       <span className="font-semibold text-navy-800">{g.guardian.full_name}</span>
                     </div>
                     <div>
-                      <span className="text-slate block">Relationship</span>
-                      <span className="font-semibold text-navy-800">{g.guardian.relationship}</span>
+                      <span className="text-slate block">{t('Relationship')}</span>
+                      <span className="font-semibold text-navy-800">{t(g.guardian.relationship)}</span>
                     </div>
                     <div>
-                      <span className="text-slate block">Phone</span>
-                      <span className="font-semibold text-navy-800">{g.guardian.phone}</span>
+                      <span className="text-slate block">{t('Phone')}</span>
+                      <span className="font-semibold text-navy-800">{g.guardian.phone || 'N/A'}</span>
                     </div>
                     <div>
-                      <span className="text-slate block">Occupation</span>
+                      <span className="text-slate block">{t('Occupation')}</span>
                       <span className="font-semibold text-navy-800">{g.guardian.occupation || 'N/A'}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <p className="text-[12px] text-slate">No guardian records linked.</p>
+                <p className="text-[12px] text-slate">{t('No guardian records linked.')}</p>
               )}
             </div>
 
             <div>
               <h3 className="text-[14px] font-semibold text-navy-800 mb-2 border-b border-border-subtle pb-2">
-                Emergency & Health Notes
+                {t('Emergency & Health Notes')}
               </h3>
               <div className="grid grid-cols-2 gap-4 text-[12px]">
                 <div>
-                  <span className="text-slate block">Emergency Contact</span>
+                  <span className="text-slate block">{t('Emergency Contact')}</span>
                   <span className="font-semibold text-navy-800">{student.emergency_contact_name || 'N/A'}</span>
                   <span className="text-slate-500 block">{student.emergency_contact_phone} ({student.emergency_contact_relation})</span>
                 </div>
                 <div>
-                  <span className="text-slate block">Medical Notes (Restricted)</span>
+                  <span className="text-slate block">{t('Medical Notes (Restricted)')}</span>
                   <p className="font-medium text-navy-800 mt-0.5">{student.medical_notes || 'No medical conditions noted.'}</p>
                 </div>
               </div>
@@ -358,40 +352,40 @@ export const StudentProfile: React.FC = () => {
           {/* Side summary column */}
           <div className="space-y-6">
             <Card>
-              <h4 className="text-[13px] font-semibold text-navy-800 mb-3">Academic Summary</h4>
+              <h4 className="text-[13px] font-semibold text-navy-800 mb-3">{t('Academic Summary')}</h4>
               <div className="space-y-2 text-[12px]">
                 <div className="flex justify-between py-1 border-b border-border-subtle">
-                  <span className="text-slate">Overall Average:</span>
+                  <span className="text-slate">{t('Overall Average:')}</span>
                   <span className="font-semibold text-navy-800">
-                    {academic_summary.overall_average !== null ? `${academic_summary.overall_average}%` : 'N/A'}
+                    {academic_summary.overall_average !== null && academic_summary.overall_average !== undefined ? `${academic_summary.overall_average}%` : 'N/A'}
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border-subtle">
-                  <span className="text-slate">Grade Evaluation:</span>
-                  <span className="font-semibold text-navy-800">{academic_summary.overall_grade}</span>
+                  <span className="text-slate">{t('Grade Evaluation:')}</span>
+                  <span className="font-semibold text-navy-800">{academic_summary.overall_grade || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border-subtle">
-                  <span className="text-slate">Examinations Taken:</span>
+                  <span className="text-slate">{t('Examinations Taken:')}</span>
                   <span className="font-semibold text-navy-800">{academic_summary.examinations.length}</span>
                 </div>
               </div>
             </Card>
 
             <Card>
-              <h4 className="text-[13px] font-semibold text-navy-800 mb-3">Attendance Summary</h4>
+              <h4 className="text-[13px] font-semibold text-navy-800 mb-3">{t('Attendance Summary')}</h4>
               <div className="space-y-2 text-[12px]">
                 <div className="flex justify-between py-1 border-b border-border-subtle">
-                  <span className="text-slate">Attendance Status:</span>
+                  <span className="text-slate">{t('Attendance Status:')}</span>
                   <span className={`font-semibold ${attendance_summary.is_low_attendance ? 'text-accent-red-text' : 'text-emerald-700'}`}>
                     {attendance_summary.percentage}%
                   </span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border-subtle">
-                  <span className="text-slate">Present / Total Days:</span>
+                  <span className="text-slate">{t('Present / Total Days:')}</span>
                   <span className="font-semibold text-navy-800">{attendance_summary.present_count} / {attendance_summary.total_sessions}</span>
                 </div>
                 <div className="flex justify-between py-1 border-b border-border-subtle">
-                  <span className="text-slate">Late Arrivals:</span>
+                  <span className="text-slate">{t('Late Arrivals:')}</span>
                   <span className="font-semibold text-amber-700">{attendance_summary.late_count}</span>
                 </div>
               </div>
@@ -405,8 +399,8 @@ export const StudentProfile: React.FC = () => {
         <div className="space-y-6">
           <Card>
             <div className="mb-4">
-              <h3 className="text-[14px] font-semibold text-navy-800">Monthly Attendance Progression</h3>
-              <p className="text-[12px] text-slate">Attendance percentage month-by-month</p>
+              <h3 className="text-[14px] font-semibold text-navy-800">{t('Monthly Attendance Progression', 'ಮಾಸಿಕ ಹಾಜರಾತಿ ಪ್ರಗತಿ')}</h3>
+              <p className="text-[12px] text-slate">{t('Attendance percentage month-by-month', 'ತಿಂಗಳುವಾರು ಹಾಜರಾತಿ ಶೇಕಡಾವಾರು')}</p>
             </div>
             <div className="h-56 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -423,17 +417,17 @@ export const StudentProfile: React.FC = () => {
 
           <Card className="p-0 overflow-hidden">
             <div className="p-4 border-b border-border-subtle flex items-center justify-between">
-              <h3 className="text-[14px] font-semibold text-navy-800">Date-wise Attendance Log</h3>
-              <span className="text-[11px] text-slate">Showing past 30 sessions</span>
+              <h3 className="text-[14px] font-semibold text-navy-800">{t('Date-wise Attendance Log', 'ದಿನಾಂಕವಾರು ಹಾಜರಾತಿ ದಾಖಲೆ')}</h3>
+              <span className="text-[11px] text-slate">{t('Showing past sessions', 'ಹಿಂದಿನ ಅವಧಿಗಳು')}</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[12px]">
                 <thead className="bg-slate-50 text-slate uppercase text-[11px] font-semibold border-b border-border-subtle">
                   <tr>
-                    <th className="py-2.5 px-4">Date</th>
-                    <th className="py-2.5 px-4">Session</th>
-                    <th className="py-2.5 px-4">Attendance Status</th>
-                    <th className="py-2.5 px-4">Remarks / Staff Notes</th>
+                    <th className="py-2.5 px-4">{t('Date')}</th>
+                    <th className="py-2.5 px-4">{t('Subject')}</th>
+                    <th className="py-2.5 px-4">{t('Status')}</th>
+                    <th className="py-2.5 px-4">{t('Staff Notes')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border-subtle">
@@ -456,7 +450,7 @@ export const StudentProfile: React.FC = () => {
                           }
                           size="sm"
                         >
-                          {r.status}
+                          {t(r.status)}
                         </Badge>
                       </td>
                       <td className="py-2.5 px-4 text-slate">{r.remarks || '-'}</td>
@@ -472,57 +466,65 @@ export const StudentProfile: React.FC = () => {
       {/* TAB CONTENT 3: ACADEMICS & GRADES */}
       {activeTab === 'academics' && (
         <div className="space-y-6">
-          {academic_summary.examinations.map((ex) => (
-            <Card key={ex.exam_id} className="p-0 overflow-hidden">
-              <div className="px-5 py-3.5 bg-slate-50/80 border-b border-border-subtle flex items-center justify-between">
-                <div>
-                  <h3 className="font-semibold text-navy-800 text-[14px]">{ex.exam_name}</h3>
-                  <span className="text-[11px] text-slate font-medium">{ex.term}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] font-semibold text-navy-800">
-                    Term Average: {ex.average_percentage}%
-                  </span>
-                  <Badge variant="navy" size="sm">Grade: {ex.overall_grade}</Badge>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-[12px]">
-                  <thead className="bg-slate-50/40 text-slate uppercase text-[11px] font-semibold border-b border-border-subtle">
-                    <tr>
-                      <th className="py-2.5 px-5">Subject</th>
-                      <th className="py-2.5 px-4 text-center">Max Marks</th>
-                      <th className="py-2.5 px-4 text-center">Marks Obtained</th>
-                      <th className="py-2.5 px-4 text-center">Percentage</th>
-                      <th className="py-2.5 px-4 text-center">Letter Grade</th>
-                      <th className="py-2.5 px-5">Teacher Feedback</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border-subtle">
-                    {ex.subjects.map((sub, sidx) => (
-                      <tr key={sidx} className="hover:bg-slate-50/60">
-                        <td className="py-2.5 px-5 font-semibold text-navy-800">{sub.subject}</td>
-                        <td className="py-2.5 px-4 text-center text-slate">{sub.max_marks}</td>
-                        <td className="py-2.5 px-4 text-center font-semibold text-navy-800">
-                          {sub.is_absent ? 'ABS' : sub.marks_obtained}
-                        </td>
-                        <td className="py-2.5 px-4 text-center">
-                          {sub.is_absent ? '-' : `${sub.percentage}%`}
-                        </td>
-                        <td className="py-2.5 px-4 text-center">
-                          <Badge variant={sub.percentage >= 70 ? 'green' : sub.percentage >= 50 ? 'amber' : 'red'} size="sm">
-                            {sub.grade}
-                          </Badge>
-                        </td>
-                        <td className="py-2.5 px-5 text-slate">{sub.remarks || '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {academic_summary.examinations.length === 0 ? (
+            <Card className="p-10 text-center text-slate">
+              <GraduationCap className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+              <p className="font-semibold text-navy-800 text-[14px]">{t('No Examination Marks Recorded Yet', 'ಇನ್ನೂ ಯಾವುದೇ ಪರೀಕ್ಷಾ ಅಂಕಗಳು ದಾಖಲಾಗಿಲ್ಲ')}</p>
+              <p className="text-[12px] text-slate-500 mt-1">{t('Enter examination marks in the Academics module to view grade transcripts.', 'ಅಂಕಗಳ ಪಟ್ಟಿಯನ್ನು ವೀಕ್ಷಿಸಲು ಶೈಕ್ಷಣಿಕ ವಿಭಾಗದಲ್ಲಿ ಅಂಕಗಳನ್ನು ನಮೂದಿಸಿ.')}</p>
             </Card>
-          ))}
+          ) : (
+            academic_summary.examinations.map((ex) => (
+              <Card key={ex.exam_id} className="p-0 overflow-hidden">
+                <div className="px-5 py-3.5 bg-slate-50/80 border-b border-border-subtle flex items-center justify-between">
+                  <div>
+                    <h3 className="font-semibold text-navy-800 text-[14px]">{ex.exam_name}</h3>
+                    <span className="text-[11px] text-slate font-medium">{ex.term}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[12px] font-semibold text-navy-800">
+                      {t('Term Average:')} {ex.average_percentage}%
+                    </span>
+                    <Badge variant="navy" size="sm">{t('Grade')}: {ex.overall_grade}</Badge>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-[12px]">
+                    <thead className="bg-slate-50/40 text-slate uppercase text-[11px] font-semibold border-b border-border-subtle">
+                      <tr>
+                        <th className="py-2.5 px-5">{t('Subject')}</th>
+                        <th className="py-2.5 px-4 text-center">{t('Max Marks')}</th>
+                        <th className="py-2.5 px-4 text-center">{t('Marks Obtained')}</th>
+                        <th className="py-2.5 px-4 text-center">{t('Percentage')}</th>
+                        <th className="py-2.5 px-4 text-center">{t('Letter Grade')}</th>
+                        <th className="py-2.5 px-5">{t('Teacher Feedback')}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border-subtle">
+                      {ex.subjects.map((sub, sidx) => (
+                        <tr key={sidx} className="hover:bg-slate-50/60">
+                          <td className="py-2.5 px-5 font-semibold text-navy-800">{sub.subject}</td>
+                          <td className="py-2.5 px-4 text-center text-slate">{sub.max_marks}</td>
+                          <td className="py-2.5 px-4 text-center font-semibold text-navy-800">
+                            {sub.is_absent ? t('Absent') : sub.marks_obtained}
+                          </td>
+                          <td className="py-2.5 px-4 text-center">
+                            {sub.is_absent ? '-' : `${sub.percentage}%`}
+                          </td>
+                          <td className="py-2.5 px-4 text-center">
+                            <Badge variant={sub.percentage >= 70 ? 'green' : sub.percentage >= 50 ? 'amber' : 'red'} size="sm">
+                              {sub.grade}
+                            </Badge>
+                          </td>
+                          <td className="py-2.5 px-5 text-slate">{sub.remarks || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            ))
+          )}
         </div>
       )}
 
@@ -530,8 +532,8 @@ export const StudentProfile: React.FC = () => {
       {activeTab === 'performance' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card>
-            <h3 className="text-[14px] font-semibold text-navy-800 mb-1">Subject Proficiency Breakdown</h3>
-            <p className="text-[12px] text-slate mb-4">Average score achieved in each subject discipline</p>
+            <h3 className="text-[14px] font-semibold text-navy-800 mb-1">{t('Subject Proficiency Breakdown', 'ವಿಷಯವಾರು ಪ್ರಾವೀಣ್ಯತೆಯ ವಿಶ್ಲೇಷಣೆ')}</h3>
+            <p className="text-[12px] text-slate mb-4">{t('Average score achieved in each subject discipline', 'ಪ್ರತಿ ವಿಷಯದಲ್ಲಿ ಸಾಧಿಸಿದ ಸರಾಸರಿ ಅಂಕಗಳು')}</p>
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={academic_summary.subject_performance} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
@@ -547,13 +549,13 @@ export const StudentProfile: React.FC = () => {
 
           <Card className="flex flex-col justify-between">
             <div>
-              <h3 className="text-[14px] font-semibold text-navy-800 mb-1">Subject Strengths & Focus Areas</h3>
-              <p className="text-[12px] text-slate mb-4">Identified academic strengths and recommended focus areas</p>
+              <h3 className="text-[14px] font-semibold text-navy-800 mb-1">{t('Subject Strengths & Focus Areas', 'ವಿಷಯದ ಸಾಮರ್ಥ್ಯಗಳು & ಗಮನ ಅಗತ್ಯವಿರುವ ಕ್ಷೇತ್ರಗಳು')}</h3>
+              <p className="text-[12px] text-slate mb-4">{t('Identified academic strengths and recommended focus areas', 'ಗುರುತಿಸಲಾದ ಶೈಕ್ಷಣಿಕ ಸಾಮರ್ಥ್ಯಗಳು ಮತ್ತು ಸುಧಾರಣೆಯ ಕ್ಷೇತ್ರಗಳು')}</p>
 
               <div className="space-y-4">
                 <div>
                   <h4 className="text-[12px] font-semibold text-emerald-800 flex items-center gap-1.5 mb-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> Academic Strengths (&gt;= 75%)
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" /> {t('Academic Strengths', 'ಶೈಕ್ಷಣಿಕ ಸಾಮರ್ಥ್ಯಗಳು')} (&gt;= 75%)
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {academic_summary.strengths.length > 0 ? (
@@ -563,14 +565,14 @@ export const StudentProfile: React.FC = () => {
                         </Badge>
                       ))
                     ) : (
-                      <span className="text-[12px] text-slate">None identified yet.</span>
+                      <span className="text-[12px] text-slate">{t('None identified yet.', 'ಇನ್ನೂ ಗುರುತಿಸಲಾಗಿಲ್ಲ.')}</span>
                     )}
                   </div>
                 </div>
 
                 <div>
                   <h4 className="text-[12px] font-semibold text-amber-800 flex items-center gap-1.5 mb-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600" /> Areas for Improvement (&lt; 60%)
+                    <AlertCircle className="w-4 h-4 text-amber-600" /> {t('Areas for Improvement', 'ಸುಧಾರಣೆಯ ಕ್ಷೇತ್ರಗಳು')} (&lt; 60%)
                   </h4>
                   <div className="flex flex-wrap gap-2">
                     {academic_summary.weaknesses.length > 0 ? (
@@ -580,7 +582,7 @@ export const StudentProfile: React.FC = () => {
                         </Badge>
                       ))
                     ) : (
-                      <span className="text-[12px] text-emerald-700 font-medium">All subjects are performing at or above 60%.</span>
+                      <span className="text-[12px] text-emerald-700 font-medium">{t('All subjects are performing at or above 60%.', 'ಎಲ್ಲಾ ವಿಷಯಗಳಲ್ಲಿ 60% ಅಥವಾ ಅದಕ್ಕಿಂತ ಹೆಚ್ಚಿನ ಸಾಧನೆ ಇದೆ.')}</span>
                     )}
                   </div>
                 </div>
@@ -588,11 +590,11 @@ export const StudentProfile: React.FC = () => {
             </div>
 
             <div className="pt-4 border-t border-border-subtle mt-4 text-[12px] text-slate">
-              <span>Overall Standing: </span>
+              <span>{t('Overall Standing: ', 'ಒಟ್ಟಾರೆ ಶ್ರೇಣಿ: ')}</span>
               <span className="font-semibold text-navy-800">
                 {academic_summary.overall_average && academic_summary.overall_average >= 80
-                  ? 'First Class with Distinction'
-                  : 'Satisfactory Academic Standing'}
+                  ? t('First Class with Distinction', 'ವಿಶಿಷ್ಟ ಪ್ರಥಮ ಶ್ರೇಣಿ')
+                  : t('Satisfactory Academic Standing', 'ತೃಪ್ತಿದಾಯಕ ಶೈಕ್ಷಣಿಕ ಸಾಧನೆ')}
               </span>
             </div>
           </Card>
@@ -606,8 +608,8 @@ export const StudentProfile: React.FC = () => {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-[14px] font-semibold text-navy-800">Official Student Achievements</h3>
-                <p className="text-[12px] text-slate">Honors, competitions, Olympiads, and athletic awards</p>
+                <h3 className="text-[14px] font-semibold text-navy-800">{t('Official Student Achievements', 'ಅಧಿಕೃತ ವಿದ್ಯಾರ್ಥಿ ಸಾಧನೆಗಳು')}</h3>
+                <p className="text-[12px] text-slate">{t('Honors, competitions, Olympiads, and athletic awards', 'ಪ್ರಶಸ್ತಿಗಳು, ಸ್ಪರ್ಧೆಗಳು, ಒಲಿಂಪಿಯಾಡ್ ಮತ್ತು ಕ್ರೀಡಾ ಪುರಸ್ಕಾರಗಳು')}</p>
               </div>
             </div>
 
@@ -632,7 +634,7 @@ export const StudentProfile: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <p className="text-[12px] text-slate py-4 text-center">No official achievements logged yet.</p>
+              <p className="text-[12px] text-slate py-4 text-center">{t('No official achievements logged yet.', 'ಇನ್ನೂ ಯಾವುದೇ ಸಾಧನೆಗಳು ದಾಖಲಾಗಿಲ್ಲ.')}</p>
             )}
           </Card>
 
@@ -640,15 +642,15 @@ export const StudentProfile: React.FC = () => {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-[14px] font-semibold text-navy-800">Staff Observations & Remarks</h3>
-                <p className="text-[12px] text-slate">Teacher observations on conduct, discipline, and participation</p>
+                <h3 className="text-[14px] font-semibold text-navy-800">{t('Staff Observations & Remarks', 'ಸಿಬ್ಬಂದಿ ಅವಲೋಕನಗಳು & ಷರಾಗಳು')}</h3>
+                <p className="text-[12px] text-slate">{t('Teacher observations on conduct, discipline, and participation', 'ನಡತೆ, ಶಿಸ್ತು ಮತ್ತು ಭಾಗವಹಿಸುವಿಕೆಯ ಕುರಿತು ಶಿಕ್ಷಕರ ಟಿಪ್ಪಣಿಗಳು')}</p>
               </div>
               <button
                 onClick={() => setIsRemarkModalOpen(true)}
-                className="px-3 py-1.5 text-[12px] font-semibold bg-navy-800 text-white rounded-lg hover:bg-navy-900 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 text-[12px] font-semibold bg-navy-800 text-white rounded-lg hover:bg-navy-900 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Add Observation</span>
+                <span>{t('Add Remark')}</span>
               </button>
             </div>
 
@@ -678,13 +680,13 @@ export const StudentProfile: React.FC = () => {
                     </div>
                     <p className="text-[12px] text-slate-700">{rem.description}</p>
                     <div className="mt-2 text-[11px] text-slate-500 font-medium">
-                      Recorded by: <span className="text-navy-800">{rem.author_name}</span> ({rem.category})
+                      {t('Recorded by: ')} <span className="text-navy-800">{rem.author_name}</span> ({rem.category})
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-[12px] text-slate py-4 text-center">No disciplinary or academic remarks recorded.</p>
+              <p className="text-[12px] text-slate py-4 text-center">{t('No disciplinary or academic remarks recorded.', 'ಯಾವುದೇ ಶಿಸ್ತು ಅಥವಾ ಶೈಕ್ಷಣಿಕ ಷರಾಗಳು ದಾಖಲಾಗಿಲ್ಲ.')}</p>
             )}
           </Card>
         </div>
@@ -694,13 +696,13 @@ export const StudentProfile: React.FC = () => {
       <Modal
         isOpen={isRemarkModalOpen}
         onClose={() => setIsRemarkModalOpen(false)}
-        title="Record Staff Observation / Remark"
-        subtitle={`Adding record for ${student.full_name}`}
+        title={t('Record Staff Observation / Remark', 'ಸಿಬ್ಬಂದಿ ಅವಲೋಕನ / ಷರಾ ದಾಖಲಿಸಿ')}
+        subtitle={`${t('Adding record for')} ${student.full_name}`}
         maxWidth="md"
       >
         <form onSubmit={handleAddRemark} className="space-y-4 text-[12px]">
           <div>
-            <label className="block text-slate-700 font-medium mb-1">Title *</label>
+            <label className="block text-slate-700 font-medium mb-1">{t('Title *', 'ಶೀರ್ಷಿಕೆ *')}</label>
             <input
               type="text"
               required
@@ -712,35 +714,35 @@ export const StudentProfile: React.FC = () => {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-slate-700 font-medium mb-1">Category</label>
+              <label className="block text-slate-700 font-medium mb-1">{t('Category', 'ವರ್ಗ')}</label>
               <select
                 value={remarkCategory}
                 onChange={(e) => setRemarkCategory(e.target.value)}
                 className="w-full px-3 py-1.5 border border-border-subtle rounded-md focus:border-navy-800 outline-none"
               >
-                <option value="ACADEMIC">Academic</option>
-                <option value="DISCIPLINE">Discipline</option>
-                <option value="ATTENDANCE">Attendance</option>
-                <option value="ACHIEVEMENT">Achievement</option>
-                <option value="GENERAL">General</option>
+                <option value="ACADEMIC">{t('Academic')}</option>
+                <option value="DISCIPLINE">{t('Discipline', 'ಶಿಸ್ತು')}</option>
+                <option value="ATTENDANCE">{t('Attendance')}</option>
+                <option value="ACHIEVEMENT">{t('Achievement', 'ಸಾಧನೆ')}</option>
+                <option value="GENERAL">{t('General', 'ಸಾಮಾನ್ಯ')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-slate-700 font-medium mb-1">Severity</label>
+              <label className="block text-slate-700 font-medium mb-1">{t('Severity', 'ತೀವ್ರತೆ')}</label>
               <select
                 value={remarkSeverity}
                 onChange={(e) => setRemarkSeverity(e.target.value)}
                 className="w-full px-3 py-1.5 border border-border-subtle rounded-md focus:border-navy-800 outline-none"
               >
-                <option value="POSITIVE">Positive / Praise</option>
-                <option value="NEUTRAL">Neutral</option>
-                <option value="WARNING">Warning</option>
-                <option value="CRITICAL">Critical</option>
+                <option value="POSITIVE">{t('Positive / Praise', 'ಪ್ರಶಂಸನೀಯ')}</option>
+                <option value="NEUTRAL">{t('Neutral', 'ತಟಸ್ಥ')}</option>
+                <option value="WARNING">{t('Warning', 'ಎಚ್ಚರಿಕೆ')}</option>
+                <option value="CRITICAL">{t('Critical', 'ಗಂಭೀರ')}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-slate-700 font-medium mb-1">Detailed Description *</label>
+            <label className="block text-slate-700 font-medium mb-1">{t('Detailed Description *', 'ವಿವರವಾದ ವಿವರಣೆ *')}</label>
             <textarea
               required
               rows={3}
@@ -754,16 +756,16 @@ export const StudentProfile: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsRemarkModalOpen(false)}
-              className="px-3 py-1.5 text-[12px] border border-border-subtle rounded-md hover:bg-slate-100"
+              className="px-3 py-1.5 text-[12px] border border-border-subtle rounded-md hover:bg-slate-100 cursor-pointer"
             >
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               type="submit"
               disabled={createRemarkMutation.isPending}
-              className="px-4 py-1.5 text-[12px] font-semibold bg-navy-800 text-white rounded-md hover:bg-navy-900 disabled:opacity-50"
+              className="px-4 py-1.5 text-[12px] font-semibold bg-navy-800 text-white rounded-md hover:bg-navy-900 disabled:opacity-50 cursor-pointer"
             >
-              {createRemarkMutation.isPending ? 'Saving...' : 'Record Remark'}
+              {createRemarkMutation.isPending ? t('Saving...') : t('Save', 'ದಾಖಲಿಸಿ')}
             </button>
           </div>
         </form>

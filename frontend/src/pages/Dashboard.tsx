@@ -21,9 +21,11 @@ import {
 import { apiClient } from '../api/client';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
+import { useLanguage } from '../context/LanguageContext';
 
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard-overview'],
@@ -127,7 +129,7 @@ export const Dashboard: React.FC = () => {
             >
               <div className="flex items-center justify-between">
                 <span className="text-[11px] font-medium text-slate uppercase tracking-wider">
-                  {card.label}
+                  {t(card.label)}
                 </span>
                 <Icon className="w-4 h-4 text-slate-400 group-hover:text-navy-800 transition-colors" />
               </div>
